@@ -1,0 +1,7 @@
+.git
+.gitignore
+README.md
+assignement.md
+fiskaly_test.pdf
+__pycache__
+*.pyc
