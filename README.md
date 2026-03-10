@@ -2,6 +2,8 @@
 
 Take home assignment for Site Reliability Engineer role at fiskaly.
 
+It is absolutely possible to run these tasks separately but I recommend following this README as it will allow you to create a docker image, set up EKS and run out image in the Kubernetes cluster in AWS.
+
 ## Task 1: Docker Hello World Web App
 
 This repository includes a minimal Python HTTP app that responds with `Hello World` on port `8080`.
@@ -230,4 +232,81 @@ Execute the playbook:
 
 ```bash
 ansible-playbook -i inventory.ini ansible/playbook.yml
+```
+
+## Bonus
+
+I have implemented some bonus items.
+
+### CI Quality Gates (GitHub Actions)
+
+Workflow file:
+
+- `.github/workflows/quality-gates.yml`
+
+Triggers:
+
+- `pull_request`
+- `push` to `master` (`main`)
+- `schedule` daily at `03:00 UTC`
+- `workflow_dispatch`
+
+Blocking checks on PR/push:
+
+- `terraform-quality`
+  - `terraform fmt -check -recursive terraform/`
+  - `terraform -chdir=terraform init -backend=false -input=false`
+  - `terraform -chdir=terraform validate`
+  - `tflint --init`
+  - `tflint --chdir=terraform --recursive`
+- `k8s-quality`
+  - `kubeconform -strict -summary k8s/*.yaml`
+  - `kube-linter lint k8s --config .kube-linter.yaml`
+- `ansible-quality`
+  - `ansible-lint ansible/playbook.yml`
+- `security-quality`
+  - `docker build -t hello-world-web:ci .`
+  - `trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci`
+  - `trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/`
+
+Nightly deep scan:
+
+- Job: `nightly-trivy-fs` (runs on `schedule` and manual `workflow_dispatch`)
+- Command:
+  - `trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .`
+- Report:
+  - JSON artifact uploaded as `trivy-fs-report`.
+
+Baseline tuning:
+
+- `.kube-linter.yaml` enables all built-in checks and excludes only:
+  - `latest-tag`
+  - `default-service-account`
+- `.tflint.hcl` enables the AWS ruleset plugin and module-aware linting.
+- `.trivyignore` is intentionally not pre-populated; add only for confirmed false positives.
+
+Recommended branch protection required checks:
+
+- `terraform-quality`
+- `k8s-quality`
+- `ansible-quality`
+- `security-quality`
+
+### Run checks locally
+
+You can run equivalent checks locally with:
+
+```bash
+terraform fmt -check -recursive terraform/
+terraform -chdir=terraform init -backend=false -input=false
+terraform -chdir=terraform validate
+tflint --init --config=.tflint.hcl
+tflint --chdir=terraform --recursive --config=../.tflint.hcl
+kubeconform -strict -summary k8s/*.yaml
+kube-linter lint k8s --config .kube-linter.yaml
+ansible-lint ansible/playbook.yml
+docker build -t hello-world-web:ci .
+trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci
+trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/
+trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .
 ```
