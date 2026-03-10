@@ -1,0 +1,82 @@
+---
+- name: Task 4 - Fleet maintenance and OS-specific services
+  hosts: all
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: restart apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+      when: ansible_facts['os_family'] == 'Debian'
+
+  tasks:
+    - name: Refresh apt package index (Ubuntu/Debian)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Refresh dnf package metadata (RedHat)
+      ansible.builtin.dnf:
+        update_cache: true
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
+
+    - name: Refresh yum package metadata (RedHat legacy)
+      ansible.builtin.yum:
+        update_cache: true
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
+
+    - name: Upgrade packages on Ubuntu/Debian
+      ansible.builtin.apt:
+        upgrade: dist
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Upgrade all packages on RedHat (dnf)
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
+
+    - name: Upgrade all packages on RedHat (yum)
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
+
+    - name: Ensure Apache is installed on Ubuntu/Debian
+      ansible.builtin.apt:
+        name: apache2
+        state: present
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Deploy Hello World page on Ubuntu/Debian
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: "Hello World\n"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart apache
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure Apache service is enabled and started on Ubuntu/Debian
+      ansible.builtin.service:
+        name: apache2
+        enabled: true
+        state: started
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Ensure MariaDB is installed on RedHat
+      ansible.builtin.package:
+        name: mariadb-server
+        state: present
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Ensure MariaDB service is enabled and started on RedHat
+      ansible.builtin.service:
+        name: mariadb
+        enabled: true
+        state: started
+      when: ansible_facts['os_family'] == 'RedHat'
