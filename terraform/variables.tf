@@ -101,7 +101,7 @@ variable "node_group_name" {
 variable "node_instance_types" {
   description = "EC2 instance types for EKS managed nodes."
   type        = list(string)
-  default     = ["t3.small"]
+  default     = ["t3.medium"]
 }
 
 variable "node_capacity_type" {
