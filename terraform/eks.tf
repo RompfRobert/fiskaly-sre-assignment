@@ -37,6 +37,34 @@ module "eks" {
       instance_types = var.node_instance_types
       capacity_type  = var.node_capacity_type
       disk_size      = var.node_group_disk_size
+
+      # Restrict egress to required AWS services and DNS
+      security_group_rules = {
+        egress_https = {
+          type              = "egress"
+          from_port         = 443
+          to_port           = 443
+          protocol          = "tcp"
+          cidr_blocks       = ["0.0.0.0/0"]
+          description       = "Allow HTTPS for ECR and AWS APIs"
+        }
+        egress_dns_udp = {
+          type              = "egress"
+          from_port         = 53
+          to_port           = 53
+          protocol          = "udp"
+          cidr_blocks       = ["0.0.0.0/0"]
+          description       = "Allow DNS queries"
+        }
+        egress_dns_tcp = {
+          type              = "egress"
+          from_port         = 53
+          to_port           = 53
+          protocol          = "tcp"
+          cidr_blocks       = ["0.0.0.0/0"]
+          description       = "Allow DNS queries"
+        }
+      }
     }
   }
 
