@@ -149,6 +149,58 @@ variable "node_group_disk_size" {
   default     = 20
 }
 
+variable "ubuntu_instance_count" {
+  description = "Number of optional Ubuntu demo instances to create."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.ubuntu_instance_count >= 0
+    error_message = "ubuntu_instance_count must be greater than or equal to 0."
+  }
+}
+
+variable "rhel_instance_count" {
+  description = "Number of optional RHEL demo instances to create."
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.rhel_instance_count >= 0
+    error_message = "rhel_instance_count must be greater than or equal to 0."
+  }
+}
+
+variable "demo_instance_type" {
+  description = "Instance type for optional Ubuntu/RHEL demo instances."
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "demo_key_name" {
+  description = "Optional EC2 key pair name for SSH access to demo instances."
+  type        = string
+  default     = ""
+}
+
+variable "demo_ssh_cidrs" {
+  description = "CIDR blocks allowed to SSH to optional demo instances."
+  type        = list(string)
+  default     = []
+}
+
+variable "ubuntu_ami_id" {
+  description = "Optional explicit Ubuntu AMI ID. If empty, latest Ubuntu 22.04 LTS AMI is discovered."
+  type        = string
+  default     = ""
+}
+
+variable "rhel_ami_id" {
+  description = "Optional explicit RHEL AMI ID. If empty, latest RHEL 9 AMI is discovered."
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Additional tags applied to all resources."
   type        = map(string)

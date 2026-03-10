@@ -47,3 +47,23 @@ output "node_group_names" {
   description = "Created EKS managed node group names."
   value       = try([for ng in module.eks.eks_managed_node_groups : ng.node_group_name], keys(module.eks.eks_managed_node_groups))
 }
+
+output "ubuntu_instance_ids" {
+  description = "Instance IDs of optional Ubuntu demo instances."
+  value       = aws_instance.ubuntu[*].id
+}
+
+output "ubuntu_instance_public_ips" {
+  description = "Public IPs of optional Ubuntu demo instances."
+  value       = aws_instance.ubuntu[*].public_ip
+}
+
+output "rhel_instance_ids" {
+  description = "Instance IDs of optional RHEL demo instances."
+  value       = aws_instance.rhel[*].id
+}
+
+output "rhel_instance_public_ips" {
+  description = "Public IPs of optional RHEL demo instances."
+  value       = aws_instance.rhel[*].public_ip
+}
