@@ -12,7 +12,7 @@ enable_nat_gateway     = true
 single_nat_gateway     = true
 one_nat_gateway_per_az = false
 
-kubernetes_version                   = "1.35"
+kubernetes_version                   = "1.32"
 cluster_endpoint_public_access       = false
 cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = []
