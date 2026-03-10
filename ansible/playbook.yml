@@ -5,7 +5,7 @@
   gather_facts: true
 
   handlers:
-    - name: restart apache
+    - name: Restart apache
       ansible.builtin.service:
         name: apache2
         state: restarted
@@ -36,13 +36,13 @@
     - name: Upgrade all packages on RedHat (dnf)
       ansible.builtin.dnf:
         name: "*"
-        state: latest
+        state: present
       when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
 
     - name: Upgrade all packages on RedHat (yum)
       ansible.builtin.yum:
         name: "*"
-        state: latest
+        state: present
       when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
 
     - name: Ensure Apache is installed on Ubuntu/Debian
