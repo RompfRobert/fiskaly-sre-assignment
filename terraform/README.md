@@ -5,7 +5,7 @@ This Terraform stack provisions:
 - A custom VPC with public/private subnets across 2-3 AZs
 - An EKS cluster with one managed node group
 - OIDC provider for IRSA
-- Optional Ubuntu/RHEL EC2 demo instances for Ansible testing
+- Optional Ubuntu/Amazon Linux EC2 demo instances for Ansible testing
 
 Task 3-oriented defaults in this stack:
 
@@ -47,7 +47,7 @@ If you want test hosts for the Ansible playbook, set optional demo EC2 counts in
 
 ```hcl
 ubuntu_instance_count = 1
-rhel_instance_count   = 1
+amazon_linux_instance_count = 1
 demo_instance_type    = "t3.micro"
 demo_key_name         = "my-keypair"
 demo_ssh_cidrs        = ["203.0.113.10/32"]
@@ -55,8 +55,9 @@ demo_ssh_cidrs        = ["203.0.113.10/32"]
 
 Notes:
 
-- RHEL AMI discovery may require Marketplace subscription in your AWS account.
-- If auto-discovery does not work in your account/region, set `ubuntu_ami_id` and `rhel_ami_id` explicitly.
+- For this demo stack we use Amazon Linux instead of RHEL to avoid extra licensing costs.
+- In production, if you require RHEL, ensure you have the appropriate Red Hat subscription/licensing and Marketplace terms accepted in your AWS account.
+- If auto-discovery does not work in your account/region, set `ubuntu_ami_id` and `amazon_linux_ami_id` explicitly.
 
 ## Deploy
 

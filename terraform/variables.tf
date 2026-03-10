@@ -160,19 +160,19 @@ variable "ubuntu_instance_count" {
   }
 }
 
-variable "rhel_instance_count" {
-  description = "Number of optional RHEL demo instances to create."
+variable "amazon_linux_instance_count" {
+  description = "Number of optional Amazon Linux demo instances to create."
   type        = number
   default     = 0
 
   validation {
-    condition     = var.rhel_instance_count >= 0
-    error_message = "rhel_instance_count must be greater than or equal to 0."
+    condition     = var.amazon_linux_instance_count >= 0
+    error_message = "amazon_linux_instance_count must be greater than or equal to 0."
   }
 }
 
 variable "demo_instance_type" {
-  description = "Instance type for optional Ubuntu/RHEL demo instances."
+  description = "Instance type for optional Ubuntu/Amazon Linux demo instances."
   type        = string
   default     = "t3.micro"
 }
@@ -195,8 +195,8 @@ variable "ubuntu_ami_id" {
   default     = ""
 }
 
-variable "rhel_ami_id" {
-  description = "Optional explicit RHEL AMI ID. If empty, latest RHEL 9 AMI is discovered."
+variable "amazon_linux_ami_id" {
+  description = "Optional explicit Amazon Linux AMI ID. If empty, latest Amazon Linux 2023 AMI is discovered."
   type        = string
   default     = ""
 }

@@ -58,12 +58,12 @@ output "ubuntu_instance_public_ips" {
   value       = aws_instance.ubuntu[*].public_ip
 }
 
-output "rhel_instance_ids" {
-  description = "Instance IDs of optional RHEL demo instances."
-  value       = aws_instance.rhel[*].id
+output "amazon_linux_instance_ids" {
+  description = "Instance IDs of optional Amazon Linux demo instances."
+  value       = aws_instance.amazon_linux[*].id
 }
 
-output "rhel_instance_public_ips" {
-  description = "Public IPs of optional RHEL demo instances."
-  value       = aws_instance.rhel[*].public_ip
+output "amazon_linux_instance_public_ips" {
+  description = "Public IPs of optional Amazon Linux demo instances."
+  value       = aws_instance.amazon_linux[*].public_ip
 }

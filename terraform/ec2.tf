@@ -1,5 +1,5 @@
 locals {
-  demo_instances_enabled = var.ubuntu_instance_count + var.rhel_instance_count > 0
+  demo_instances_enabled = var.ubuntu_instance_count + var.amazon_linux_instance_count > 0
 }
 
 data "aws_ami" "ubuntu" {
@@ -23,14 +23,14 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-data "aws_ami" "rhel" {
-  count       = var.rhel_instance_count > 0 && var.rhel_ami_id == "" ? 1 : 0
+data "aws_ami" "amazon_linux" {
+  count       = var.amazon_linux_instance_count > 0 && var.amazon_linux_ami_id == "" ? 1 : 0
   most_recent = true
-  owners      = ["309956199498"] # Red Hat
+  owners      = ["137112412989"] # Amazon
 
   filter {
     name   = "name"
-    values = ["RHEL-9.*_HVM-*-x86_64-*-GP3"]
+    values = ["al2023-ami-2023.*-x86_64"]
   }
 
   filter {
@@ -47,7 +47,7 @@ data "aws_ami" "rhel" {
 resource "aws_security_group" "demo_ec2" {
   count       = local.demo_instances_enabled ? 1 : 0
   name        = "${local.name_prefix}-demo-ec2-sg"
-  description = "Security group for optional Ubuntu/RHEL demo instances"
+  description = "Security group for optional Ubuntu/Amazon Linux demo instances"
   vpc_id      = module.vpc.vpc_id
 
   dynamic "ingress" {
@@ -91,10 +91,10 @@ resource "aws_instance" "ubuntu" {
   })
 }
 
-resource "aws_instance" "rhel" {
-  count = var.rhel_instance_count
+resource "aws_instance" "amazon_linux" {
+  count = var.amazon_linux_instance_count
 
-  ami                         = var.rhel_ami_id != "" ? var.rhel_ami_id : data.aws_ami.rhel[0].id
+  ami                         = var.amazon_linux_ami_id != "" ? var.amazon_linux_ami_id : data.aws_ami.amazon_linux[0].id
   instance_type               = var.demo_instance_type
   subnet_id                   = element(module.vpc.public_subnets, count.index % length(module.vpc.public_subnets))
   vpc_security_group_ids      = [aws_security_group.demo_ec2[0].id]
@@ -102,8 +102,8 @@ resource "aws_instance" "rhel" {
   associate_public_ip_address = true
 
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-rhel-${count.index + 1}"
-    OS   = "rhel"
+    Name = "${local.name_prefix}-amazon-linux-${count.index + 1}"
+    OS   = "amazon-linux"
     Role = "ansible-demo"
   })
 }
