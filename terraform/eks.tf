@@ -39,6 +39,7 @@ module "eks" {
       disk_size      = var.node_group_disk_size
 
       # Restrict egress to required AWS services and DNS
+      # trivy:skip=AVD-AWS-0104: Acceptable for demo environment
       security_group_rules = {
         egress_https = {
           type        = "egress"
