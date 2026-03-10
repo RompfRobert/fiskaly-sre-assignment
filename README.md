@@ -247,9 +247,7 @@ Workflow file:
 Triggers:
 
 - `pull_request`
-- `push` to `master` (`main`)
-- `schedule` daily at `03:00 UTC`
-- `workflow_dispatch`
+- `push` to `master`
 
 Blocking checks on PR/push:
 
@@ -262,35 +260,18 @@ Blocking checks on PR/push:
 - `k8s-quality`
   - `kubeconform -strict -summary k8s/*.yaml`
   - `kube-linter lint k8s --config .kube-linter.yaml`
-- `ansible-quality`
-  - `ansible-lint ansible/playbook.yml`
-- `security-quality`
-  - `docker build -t hello-world-web:ci .`
-  - `trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci`
-  - `trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/`
 
-Nightly deep scan:
-
-- Job: `nightly-trivy-fs` (runs on `schedule` and manual `workflow_dispatch`)
-- Command:
-  - `trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .`
-- Report:
-  - JSON artifact uploaded as `trivy-fs-report`.
-
-Baseline tuning:
+Linting baseline tuning:
 
 - `.kube-linter.yaml` enables all built-in checks and excludes only:
   - `latest-tag`
   - `default-service-account`
 - `.tflint.hcl` enables the AWS ruleset plugin and module-aware linting.
-- `.trivyignore` is intentionally not pre-populated; add only for confirmed false positives.
 
 Recommended branch protection required checks:
 
 - `terraform-quality`
 - `k8s-quality`
-- `ansible-quality`
-- `security-quality`
 
 ### Run checks locally
 
@@ -304,9 +285,4 @@ tflint --init --config=.tflint.hcl
 tflint --chdir=terraform --recursive --config=../.tflint.hcl
 kubeconform -strict -summary k8s/*.yaml
 kube-linter lint k8s --config .kube-linter.yaml
-ansible-lint ansible/playbook.yml
-docker build -t hello-world-web:ci .
-trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci
-trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/
-trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .
 ```
