@@ -41,28 +41,28 @@ module "eks" {
       # Restrict egress to required AWS services and DNS
       security_group_rules = {
         egress_https = {
-          type              = "egress"
-          from_port         = 443
-          to_port           = 443
-          protocol          = "tcp"
-          cidr_blocks       = ["0.0.0.0/0"]
-          description       = "Allow HTTPS for ECR and AWS APIs"
+          type        = "egress"
+          from_port   = 443
+          to_port     = 443
+          protocol    = "tcp"
+          cidr_blocks = ["0.0.0.0/0"]
+          description = "Allow HTTPS for ECR and AWS APIs"
         }
         egress_dns_udp = {
-          type              = "egress"
-          from_port         = 53
-          to_port           = 53
-          protocol          = "udp"
-          cidr_blocks       = ["0.0.0.0/0"]
-          description       = "Allow DNS queries"
+          type        = "egress"
+          from_port   = 53
+          to_port     = 53
+          protocol    = "udp"
+          cidr_blocks = ["0.0.0.0/0"]
+          description = "Allow DNS queries"
         }
         egress_dns_tcp = {
-          type              = "egress"
-          from_port         = 53
-          to_port           = 53
-          protocol          = "tcp"
-          cidr_blocks       = ["0.0.0.0/0"]
-          description       = "Allow DNS queries"
+          type        = "egress"
+          from_port   = 53
+          to_port     = 53
+          protocol    = "tcp"
+          cidr_blocks = ["0.0.0.0/0"]
+          description = "Allow DNS queries"
         }
       }
     }
