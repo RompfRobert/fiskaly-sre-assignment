@@ -65,7 +65,9 @@ It uses official modules only:
 - `terraform-aws-modules/vpc/aws`
 - `terraform-aws-modules/eks/aws`
 
-### Prerequisites
+For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linux to avoid additional RHEL licensing costs. In production, if RHEL is required, the corresponding Red Hat subscription/licensing and AWS Marketplace terms must be in place.
+
+### Task 2 Prerequisites
 
 - Terraform
 - AWS CLI v2
@@ -90,7 +92,7 @@ cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
 ```
 
-### Deploy
+### Task 2 Deploy
 
 ```bash
 terraform init
@@ -190,3 +192,42 @@ Hello World
 - `Traefik`: good for simple dynamic routing and lightweight setups.
 - `HAProxy Ingress`: good when fine-grained traffic tuning or very high throughput is needed.
 - Cloud-native ingress controllers (for example AWS ALB Controller): good when you want managed cloud L7 integration, IAM-native workflows, and native cloud load balancer features.
+
+## Task 4: Ansible Playbook (Ubuntu + RedHat)
+
+Playbook path:
+
+- `ansible/playbook.yml`
+
+What it does:
+
+- Gathers system facts for all hosts.
+- Updates package repositories.
+- Upgrades packages.
+- On Ubuntu/Debian:
+  - Installs Apache (`apache2`).
+  - Serves a static `Hello World` page at `/var/www/html/index.html`.
+  - Restarts Apache when the page changes (via handler).
+- On RedHat:
+  - Installs MariaDB (`mariadb-server`).
+
+### Run
+
+Create an inventory file (example):
+
+```ini
+[ubuntu]
+ubuntu-1 ansible_host=192.168.1.10 ansible_user=ubuntu
+
+[redhat]
+rhel-1 ansible_host=192.168.1.20 ansible_user=ec2-user
+
+[all:vars]
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+```
+
+Execute the playbook:
+
+```bash
+ansible-playbook -i inventory.ini ansible/playbook.yml
+```
