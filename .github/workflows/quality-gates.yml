@@ -108,7 +108,7 @@ jobs:
         run: trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci
 
       - name: Run Trivy IaC scan
-        run: trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/
+        run: trivy config --severity HIGH,CRITICAL --exit-code 1 --skip-dirs terraform/.terraform terraform/
 
   nightly-trivy-fs:
     name: nightly-trivy-fs
