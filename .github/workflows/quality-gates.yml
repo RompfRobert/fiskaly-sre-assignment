@@ -1,0 +1,139 @@
+name: quality-gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  terraform-quality:
+    name: terraform-quality
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive terraform/
+
+      - name: Terraform init (no backend)
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform -chdir=terraform validate
+
+      - name: Initialize TFLint plugins
+        run: tflint --init --config=.tflint.hcl
+
+      - name: Run TFLint
+        run: tflint --chdir=terraform --recursive --config=../.tflint.hcl
+
+  k8s-quality:
+    name: k8s-quality
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          KUBECONFORM_VERSION="0.6.7"
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          chmod +x kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+      - name: Install kube-linter
+        run: |
+          KUBE_LINTER_VERSION="0.7.6"
+          curl -sSL "https://github.com/stackrox/kube-linter/releases/download/v${KUBE_LINTER_VERSION}/kube-linter-linux.tar.gz" -o kube-linter.tar.gz
+          tar -xzf kube-linter.tar.gz
+          chmod +x kube-linter
+          sudo mv kube-linter /usr/local/bin/kube-linter
+
+      - name: Run kubeconform
+        run: kubeconform -strict -summary k8s/*.yaml
+
+      - name: Run kube-linter
+        run: kube-linter lint k8s --config .kube-linter.yaml
+
+  ansible-quality:
+    name: ansible-quality
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ansible-lint
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible-core ansible-lint
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/playbook.yml
+
+  security-quality:
+    name: security-quality
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t hello-world-web:ci .
+
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+
+      - name: Run Trivy image scan
+        run: trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci
+
+      - name: Run Trivy IaC scan
+        run: trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/
+
+  nightly-trivy-fs:
+    name: nightly-trivy-fs
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+
+      - name: Run full repository Trivy scan
+        run: |
+          trivy fs \
+            --scanners vuln,misconfig,secret \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --format json \
+            --output trivy-fs-report.json \
+            .
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs-report.json

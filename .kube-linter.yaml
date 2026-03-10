@@ -1,0 +1,5 @@
+checks:
+  addAllBuiltIn: true
+  exclude:
+    - latest-tag
+    - default-service-account
