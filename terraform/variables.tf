@@ -206,9 +206,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-variable "backend_bucket" {
-  description = "S3 bucket name for Terraform remote state backend. Must be configured if using remote state."
-  type        = string
-  default     = "fiskaly-sre-assignment-terraform-backend"
-}

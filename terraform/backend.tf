@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket  = var.backend_bucket
+    bucket  = "fiskaly-sre-assignment-terraform-backend"
     key     = "terraform.tfstate"
     region  = "eu-central-1"
     encrypt = true

@@ -36,9 +36,6 @@ demo_ssh_cidrs        = []
 ubuntu_ami_id = ""
 amazon_linux_ami_id = ""
 
-# Specify the name of the S3 bucket used for backend
-backend_bucket = "fiskaly-sre-assignment-terraform-backend"
-
 tags = {
   Owner = "platform-team"
 }
