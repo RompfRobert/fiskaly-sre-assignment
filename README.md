@@ -49,6 +49,7 @@ http://192.168.1.42:8080
 ### Approach and reasoning
 
 - I implemented a minimal Python HTTP server using the standard library to keep the image tiny and dependency-free.
+- The container image runs as a dedicated non-root user (UID/GID 10001) to align with Kubernetes pod security settings.
 
 - Assumptions: the app will be run in a local/network Docker host with port 8080 reachable; no production TLS or auth required for this exercise.
 
