@@ -18,32 +18,32 @@
         cache_valid_time: 3600
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Refresh dnf package metadata (RedHat)
+    - name: Refresh dnf package metadata (Amazon Linux)
       ansible.builtin.dnf:
         update_cache: true
-      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
+      when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'dnf'
 
-    - name: Refresh yum package metadata (RedHat legacy)
+    - name: Refresh yum package metadata (Amazon Linux legacy)
       ansible.builtin.yum:
         update_cache: true
-      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
+      when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'yum'
 
     - name: Upgrade packages on Ubuntu/Debian
       ansible.builtin.apt:
         upgrade: dist
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Upgrade all packages on RedHat (dnf)
+    - name: Upgrade all packages on Amazon Linux (dnf)
       ansible.builtin.dnf:
         name: "*"
         state: present
-      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
+      when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'dnf'
 
-    - name: Upgrade all packages on RedHat (yum)
+    - name: Upgrade all packages on Amazon Linux (yum)
       ansible.builtin.yum:
         name: "*"
         state: present
-      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
+      when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'yum'
 
     - name: Ensure Apache is installed on Ubuntu/Debian
       ansible.builtin.apt:
@@ -68,15 +68,15 @@
         state: started
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Ensure MariaDB is installed on RedHat
+    - name: Ensure MariaDB is installed on Amazon Linux
       ansible.builtin.package:
         name: mariadb-server
         state: present
-      when: ansible_facts['os_family'] == 'RedHat'
+      when: ansible_facts['distribution'] == 'Amazon'
 
-    - name: Ensure MariaDB service is enabled and started on RedHat
+    - name: Ensure MariaDB service is enabled and started on Amazon Linux
       ansible.builtin.service:
         name: mariadb
         enabled: true
         state: started
-      when: ansible_facts['os_family'] == 'RedHat'
+      when: ansible_facts['distribution'] == 'Amazon'
