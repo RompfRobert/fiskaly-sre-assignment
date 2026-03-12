@@ -316,6 +316,35 @@ Expected:
 - `root-apps`, `hello-world`, and `ingress-nginx` applications show `Synced` and `Healthy`.
 - Hello World is reachable through the ingress controller.
 
+### Operations Readiness (Bonus)
+
+Failure scenario (pod crash or bad rollout):
+
+- A new deployment causes repeated restarts (`CrashLoopBackOff`) or the rollout gets stuck with unavailable replicas.
+
+Detection (signals to watch):
+
+- `kubectl rollout status deployment/hello-world -n hello-world`
+- `kubectl get pods -n hello-world -w`
+- `kubectl get events -n hello-world --sort-by=.lastTimestamp`
+- Argo CD application health/sync status for `hello-world`.
+
+Recovery (exact rollback path):
+
+1. Identify the previous stable revision:
+  `kubectl rollout history deployment/hello-world -n hello-world`
+2. Roll back immediately:
+  `kubectl rollout undo deployment/hello-world -n hello-world`
+3. If GitOps re-applies a bad commit, revert that commit in Git and let Argo CD sync:
+  `git revert <bad_commit_sha>` then push and verify Argo CD reconciliation.
+
+Verification (what confirms healthy state):
+
+- `kubectl rollout status deployment/hello-world -n hello-world` returns successfully.
+- `kubectl get pods -n hello-world` shows desired replicas as `Running` and `Ready`.
+- `kubectl get applications -n argocd` shows `hello-world` as `Synced` and `Healthy`.
+- `curl` to the ingress endpoint returns `Hello World`.
+
 #### Notes and trade-offs
 
 - Child applications are configured with `automated` sync, `prune`, and `selfHeal`.
