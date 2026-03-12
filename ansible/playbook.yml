@@ -36,13 +36,15 @@
     - name: Upgrade all packages on RedHat (dnf)
       ansible.builtin.dnf:
         name: "*"
-        state: present
+        state: latest
+        update_only: true
       when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'dnf'
 
     - name: Upgrade all packages on RedHat (yum)
       ansible.builtin.yum:
         name: "*"
-        state: present
+        state: latest
+        update_only: true
       when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['pkg_mgr'] == 'yum'
 
     - name: Ensure Apache is installed on Ubuntu/Debian
@@ -58,7 +60,7 @@
         owner: root
         group: root
         mode: "0644"
-      notify: restart apache
+      notify: Restart apache
       when: ansible_facts['os_family'] == 'Debian'
 
     - name: Ensure Apache service is enabled and started on Ubuntu/Debian
