@@ -231,6 +231,31 @@ terraform destroy
 - OIDC provider for IRSA.
 - Optional demo EC2 instances (Ubuntu + Amazon Linux) for Ansible testing.
 
+#### Terraform architecture diagram
+
+```mermaid
+flowchart TD
+  Internet((Internet))
+  VPC[VPC 10.0.0.0/16]
+  Pub[Public Subnets]
+  Priv[Private Subnets]
+  NAT[NAT Gateway]
+  EKS[EKS Control Plane]
+  Nodes[Managed Node Group]
+  OIDC[OIDC Provider / IRSA]
+  Demo[Demo EC2 Hosts\nUbuntu + Amazon Linux]
+
+  Internet --> Pub
+  VPC --> Pub
+  VPC --> Priv
+  Pub --> NAT
+  NAT --> Priv
+  EKS --> Priv
+  Priv --> Nodes
+  EKS --> OIDC
+  Pub --> Demo
+```
+
 #### Key decisions
 
 - EKS over self-managed Kubernetes: managed control plane reduces ops overhead.
