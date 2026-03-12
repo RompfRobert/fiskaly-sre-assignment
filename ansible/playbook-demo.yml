@@ -3,6 +3,9 @@
   hosts: all
   become: true
   gather_facts: true
+  vars:
+    # Demo mode keeps progressing even when some package streams conflict.
+    demo_resilient_mode: true
 
   handlers:
     - name: Restart apache
@@ -36,13 +39,17 @@
     - name: Upgrade all packages on Amazon Linux (dnf)
       ansible.builtin.dnf:
         name: "*"
-        state: present
+        state: latest
+        update_only: true
+        skip_broken: "{{ demo_resilient_mode }}"
       when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'dnf'
 
     - name: Upgrade all packages on Amazon Linux (yum)
       ansible.builtin.yum:
         name: "*"
-        state: present
+        state: latest
+        update_only: true
+        skip_broken: "{{ demo_resilient_mode }}"
       when: ansible_facts['distribution'] == 'Amazon' and ansible_facts['pkg_mgr'] == 'yum'
 
     - name: Ensure Apache is installed on Ubuntu/Debian
@@ -58,7 +65,7 @@
         owner: root
         group: root
         mode: "0644"
-      notify: restart apache
+      notify: Restart apache
       when: ansible_facts['os_family'] == 'Debian'
 
     - name: Ensure Apache service is enabled and started on Ubuntu/Debian
@@ -68,9 +75,9 @@
         state: started
       when: ansible_facts['os_family'] == 'Debian'
 
-    - name: Ensure MariaDB is installed on Amazon Linux
+    - name: Ensure MariaDB is installed on Amazon Linux (AL2/AL2023)
       ansible.builtin.package:
-        name: mariadb-server
+        name: "{{ 'mariadb105-server' if (ansible_facts['distribution_major_version'] | int) >= 2023 else 'mariadb-server' }}"
         state: present
       when: ansible_facts['distribution'] == 'Amazon'
 
