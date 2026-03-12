@@ -371,6 +371,72 @@ What it does:
 - On RedHat:
   - Installs MariaDB (`mariadb-server`).
 
+### Approach and reasoning
+
+- **Single play for mixed fleet**: One playbook targets `all` hosts and uses OS-family conditionals to keep logic centralized and easy to review.
+- **Facts-driven branching**: `ansible_facts['os_family']` and `ansible_facts['pkg_mgr']` decide whether `apt`, `dnf`, or `yum` tasks run.
+- **Idempotent package/service management**: Built-in modules ensure repeated runs converge to the same desired state.
+- **Handler-based Apache restart**: Apache restarts only when `index.html` changes, avoiding unnecessary service disruption.
+- **Service readiness included**: Apache and MariaDB are both enabled and started to ensure hosts are immediately usable after one run.
+
+### Assumptions
+
+- SSH connectivity to all target hosts is available and inventory variables are correct.
+- Remote users have sudo privileges (`become: true`).
+- Debian-family hosts use `apache2` package/service naming.
+- RedHat-family hosts provide `mariadb-server` package and `mariadb` service.
+- Managed hosts have access to configured package repositories.
+
+### Trade-offs and alternatives
+
+- **One playbook vs split role/playbooks**: A single file is simpler for this assignment; roles would improve reuse for larger environments.
+- **In-place package upgrades**: Easy to operate but can introduce unplanned version changes; production teams often use staged rollouts and version pinning.
+- **Conflict handling policy**: For this demo, resilient mode (`skip_broken=true`) is reasonable so package stream conflicts do not block validating the required Apache/MariaDB outcomes. In production, strict mode (`skip_broken=false`) is preferred so dependency conflicts fail fast and are remediated explicitly.
+- **OS-family conditionals**: Flexible for mixed fleets, but logic grows over time; inventory-group based plays can be clearer at scale.
+- **Static content via `copy`**: Works for a simple page; templates (`ansible.builtin.template`) are better when host-specific config is needed.
+- **Community alternatives**: Collections/roles from Ansible Galaxy can speed up setup, but custom tasks provide clearer control and fewer external dependencies.
+
+### SSH key setup (for EC2 demo hosts)
+
+Use your own EC2 key pair and matching private key file.
+
+Create a key pair (example):
+
+```bash
+aws ec2 create-key-pair \
+  --region eu-central-1 \
+  --key-name sre-assignment-demo \
+  --query 'KeyMaterial' \
+  --output text > ~/.ssh/sre-assignment-demo.pem
+
+chmod 600 ~/.ssh/sre-assignment-demo.pem
+```
+
+Then set the same key name in `terraform/terraform.tfvars` and allow SSH from your current public IP:
+
+```hcl
+ubuntu_instance_count      = 1
+amazon_linux_instance_count = 1
+demo_key_name             = "sre-assignment-demo"
+demo_ssh_cidrs            = ["203.0.113.10/32"]
+```
+
+Note: demo EC2 instances are disabled by default (`ubuntu_instance_count = 0`, `amazon_linux_instance_count = 0`).
+
+### Generate inventory automatically
+
+After `terraform apply`, generate `inventory.ini` from Terraform outputs:
+
+```bash
+scripts/generate-inventory.sh > inventory.ini
+```
+
+Or write directly to file:
+
+```bash
+scripts/generate-inventory.sh inventory.ini
+```
+
 ### Run
 
 Create an inventory file (example):
