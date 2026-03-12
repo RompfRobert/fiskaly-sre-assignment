@@ -277,9 +277,30 @@ What Argo CD provisions and reconciles:
 #### Bootstrap Argo CD and apps
 
 ```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+helm upgrade --install argocd argo/argo-cd \
+  --namespace argocd \
+  --version 7.7.16
 kubectl apply -f argocd/apps/root.yaml
+```
+
+#### Access Argo CD dashboard
+
+For this demo we keep dashboard access simple and local:
+
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8443:443
+```
+
+Open `https://localhost:8443` and log in with user `admin`.
+
+Retrieve the initial admin password with:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
 #### Validate sync status
@@ -301,6 +322,7 @@ Expected:
 - `ingress-nginx` is pinned to chart version `4.12.1` for reproducibility.
 - This adds operational complexity compared to static manifests, but is closer to production SRE workflows.
 - If you deploy from another branch, update `targetRevision` in Argo CD applications.
+- Another valid dashboard exposure method is using a domain with DNS and TLS (for example Ingress/LoadBalancer + certificate management), but since this is a demo we intentionally keep it simple with local port-forward access.
 
 ## Task 4: Ansible Playbook (Ubuntu + RedHat)
 
