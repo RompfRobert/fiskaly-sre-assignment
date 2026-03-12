@@ -62,12 +62,18 @@ if [[ ! -f "${key_path}" ]]; then
   info "Inventory will still be generated. Update ansible_ssh_private_key_file if your key is elsewhere."
 fi
 
-mapfile -t ubuntu_ips < <(
+ubuntu_ips=()
+while IFS= read -r ip; do
+  ubuntu_ips+=("${ip}")
+done < <(
   terraform -chdir="${TERRAFORM_DIR}" output -json ubuntu_instance_public_ips \
     | jq -r '.[]? | select(. != null and . != "")'
 )
 
-mapfile -t redhat_ips < <(
+redhat_ips=()
+while IFS= read -r ip; do
+  redhat_ips+=("${ip}")
+done < <(
   terraform -chdir="${TERRAFORM_DIR}" output -json amazon_linux_instance_public_ips \
     | jq -r '.[]? | select(. != null and . != "")'
 )
