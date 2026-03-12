@@ -197,12 +197,6 @@ The app from Task 1 is deployed with Kubernetes manifests in `k8s/`.
 - For local clusters (for example, kind): the `hello-world-web:latest` image available to cluster nodes.
 - For EKS: push the image to ECR (or another reachable registry) and update `k8s/deployment.yaml` `image:` accordingly.
 
-Example for kind image loading:
-
-```bash
-kind load docker-image hello-world-web:latest
-```
-
 ### Deploy
 
 ```bash
@@ -248,6 +242,65 @@ Hello World
 - `Traefik`: good for simple dynamic routing and lightweight setups.
 - `HAProxy Ingress`: good when fine-grained traffic tuning or very high throughput is needed.
 - Cloud-native ingress controllers (for example AWS ALB Controller): good when you want managed cloud L7 integration, IAM-native workflows, and native cloud load balancer features.
+
+### Bonus integration: Argo CD GitOps
+
+To go beyond static `kubectl apply`, this repository now includes an Argo CD deployment model for Task 2.
+
+Why this is useful:
+
+- Git becomes the single source of truth for Kubernetes desired state.
+- Drift is corrected automatically (`selfHeal`) and stale resources are removed (`prune`).
+- Every change goes through PR review and Git history.
+
+Argo CD resources added in this repo:
+
+- `argocd/apps/root.yaml`: root app-of-apps entrypoint.
+- `argocd/apps/children/project.yaml`: `AppProject` guardrails (allowed repo + namespaces).
+- `argocd/apps/children/hello-world.yaml`: deploys the demo app stack from `k8s/`.
+- `argocd/apps/children/ingress-nginx.yaml`: deploys `ingress-nginx` controller from Helm chart.
+- `argocd/README.md`: quick start and validation commands.
+
+What Argo CD provisions and reconciles:
+
+- Demo app resources from `k8s/`: namespace, deployment, service, ingress, HPA, network policy.
+- Ingress controller resources via `ingress-nginx` Helm chart.
+- Argo CD project-level boundaries through the `platform` `AppProject`.
+
+#### GitOps layout
+
+- `argocd/apps/root.yaml`
+- `argocd/apps/children/project.yaml`
+- `argocd/apps/children/hello-world.yaml`
+- `argocd/apps/children/ingress-nginx.yaml`
+
+#### Bootstrap Argo CD and apps
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f argocd/apps/root.yaml
+```
+
+#### Validate sync status
+
+```bash
+kubectl get applications -n argocd
+kubectl get deploy,svc,ingress,hpa -n hello-world
+kubectl get pods -n ingress-nginx
+```
+
+Expected:
+
+- `root-apps`, `hello-world`, and `ingress-nginx` applications show `Synced` and `Healthy`.
+- Hello World is reachable through the ingress controller.
+
+#### Notes and trade-offs
+
+- Child applications are configured with `automated` sync, `prune`, and `selfHeal`.
+- `ingress-nginx` is pinned to chart version `4.12.1` for reproducibility.
+- This adds operational complexity compared to static manifests, but is closer to production SRE workflows.
+- If you deploy from another branch, update `targetRevision` in Argo CD applications.
 
 ## Task 4: Ansible Playbook (Ubuntu + RedHat)
 
