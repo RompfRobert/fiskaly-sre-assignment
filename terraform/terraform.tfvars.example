@@ -25,17 +25,6 @@ node_group_max_size     = 4
 node_group_desired_size = 4
 node_group_disk_size    = 20
 
-# Optional demo EC2 fleet for Ansible testing (default: disabled)
-ubuntu_instance_count = 0
-amazon_linux_instance_count = 0
-demo_instance_type    = "t3.micro"
-demo_key_name         = ""
-demo_ssh_cidrs        = []
-
-# Optional explicit AMI overrides
-ubuntu_ami_id = ""
-amazon_linux_ami_id = ""
-
 tags = {
   Owner = "platform-team"
 }

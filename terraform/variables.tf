@@ -149,58 +149,6 @@ variable "node_group_disk_size" {
   default     = 20
 }
 
-variable "ubuntu_instance_count" {
-  description = "Number of optional Ubuntu demo instances to create."
-  type        = number
-  default     = 0
-
-  validation {
-    condition     = var.ubuntu_instance_count >= 0
-    error_message = "ubuntu_instance_count must be greater than or equal to 0."
-  }
-}
-
-variable "amazon_linux_instance_count" {
-  description = "Number of optional Amazon Linux demo instances to create."
-  type        = number
-  default     = 0
-
-  validation {
-    condition     = var.amazon_linux_instance_count >= 0
-    error_message = "amazon_linux_instance_count must be greater than or equal to 0."
-  }
-}
-
-variable "demo_instance_type" {
-  description = "Instance type for optional Ubuntu/Amazon Linux demo instances."
-  type        = string
-  default     = "t3.micro"
-}
-
-variable "demo_key_name" {
-  description = "Optional EC2 key pair name for SSH access to demo instances."
-  type        = string
-  default     = ""
-}
-
-variable "demo_ssh_cidrs" {
-  description = "CIDR blocks allowed to SSH to optional demo instances."
-  type        = list(string)
-  default     = []
-}
-
-variable "ubuntu_ami_id" {
-  description = "Optional explicit Ubuntu AMI ID. If empty, latest Ubuntu 22.04 LTS AMI is discovered."
-  type        = string
-  default     = ""
-}
-
-variable "amazon_linux_ami_id" {
-  description = "Optional explicit Amazon Linux AMI ID. If empty, latest Amazon Linux 2023 AMI is discovered."
-  type        = string
-  default     = ""
-}
-
 variable "tags" {
   description = "Additional tags applied to all resources."
   type        = map(string)
