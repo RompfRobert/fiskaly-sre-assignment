@@ -290,47 +290,6 @@ What it does:
 - **Static content via `copy`**: Works for a simple page; templates (`ansible.builtin.template`) are better when host-specific config is needed.
 - **Community alternatives**: Collections/roles from Ansible Galaxy can speed up setup, but custom tasks provide clearer control and fewer external dependencies.
 
-### SSH key setup (for EC2 demo hosts)
-
-Use your own EC2 key pair and matching private key file.
-
-Create a key pair (example):
-
-```bash
-aws ec2 create-key-pair \
-  --region eu-central-1 \
-  --key-name sre-assignment-demo \
-  --query 'KeyMaterial' \
-  --output text > ~/.ssh/sre-assignment-demo.pem
-
-chmod 600 ~/.ssh/sre-assignment-demo.pem
-```
-
-Then set the same key name in `terraform/terraform.tfvars` and allow SSH from your current public IP:
-
-```hcl
-ubuntu_instance_count      = 1
-amazon_linux_instance_count = 1
-demo_key_name             = "sre-assignment-demo"
-demo_ssh_cidrs            = ["203.0.113.10/32"]
-```
-
-Note: demo EC2 instances are disabled by default (`ubuntu_instance_count = 0`, `amazon_linux_instance_count = 0`).
-
-### Generate inventory automatically
-
-After `terraform apply`, generate `inventory.ini` from Terraform outputs:
-
-```bash
-scripts/generate-inventory.sh > inventory.ini
-```
-
-Or write directly to file:
-
-```bash
-scripts/generate-inventory.sh inventory.ini
-```
-
 ### Run
 
 Create an inventory file (example):
@@ -350,48 +309,4 @@ Execute the playbook:
 
 ```bash
 ansible-playbook -i inventory.ini ansible/playbook.yml
-```
-
-### Reviewer quick validation steps
-
-1. Configure and create demo instances in `terraform/terraform.tfvars` (counts, `demo_key_name`, `demo_ssh_cidrs`).
-2. Apply Terraform:
-
-```bash
-cd terraform
-terraform init
-terraform apply
-```
-
-3. Generate inventory:
-
-```bash
-cd ..
-scripts/generate-inventory.sh > inventory.ini
-```
-
-4. Validate SSH connectivity before running the playbook:
-
-```bash
-ansible all -i inventory.ini -m ping
-```
-
-5. Run playbook:
-
-```bash
-ansible-playbook -i inventory.ini ansible/playbook.yml
-```
-
-6. Verify expected outcomes:
-
-```bash
-ansible ubuntu -i inventory.ini -m shell -a 'curl -s http://localhost/'
-ansible redhat -i inventory.ini -m shell -a 'systemctl is-active mariadb'
-```
-
-7. Clean up resources:
-
-```bash
-cd terraform
-terraform destroy
 ```
