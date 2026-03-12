@@ -31,13 +31,12 @@ amazon_linux_instance_count = 0
 demo_instance_type    = "t3.micro"
 demo_key_name         = ""
 demo_ssh_cidrs        = []
+auto_detect_demo_ssh_cidr = true
+demo_ssh_cidr_lookup_url  = "https://checkip.amazonaws.com"
 
 # Optional explicit AMI overrides
 ubuntu_ami_id = ""
 amazon_linux_ami_id = ""
-
-# Specify the name of the S3 bucket used for backend
-backend_bucket = "fiskaly-sre-assignment-terraform-backend"
 
 tags = {
   Owner = "platform-team"

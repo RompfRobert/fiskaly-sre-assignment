@@ -189,6 +189,18 @@ variable "demo_ssh_cidrs" {
   default     = []
 }
 
+variable "auto_detect_demo_ssh_cidr" {
+  description = "Automatically add the current operator public IP as /32 for demo instance SSH access."
+  type        = bool
+  default     = true
+}
+
+variable "demo_ssh_cidr_lookup_url" {
+  description = "URL returning the operator public IPv4 used when auto-detecting demo SSH CIDR."
+  type        = string
+  default     = "https://checkip.amazonaws.com"
+}
+
 variable "ubuntu_ami_id" {
   description = "Optional explicit Ubuntu AMI ID. If empty, latest Ubuntu 22.04 LTS AMI is discovered."
   type        = string
@@ -205,10 +217,4 @@ variable "tags" {
   description = "Additional tags applied to all resources."
   type        = map(string)
   default     = {}
-}
-
-variable "backend_bucket" {
-  description = "S3 bucket name for Terraform remote state backend. Must be configured if using remote state."
-  type        = string
-  default     = "fiskaly-sre-assignment-terraform-backend"
 }

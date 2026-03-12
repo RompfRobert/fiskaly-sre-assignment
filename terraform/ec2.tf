@@ -2,6 +2,16 @@ locals {
   demo_instances_enabled = var.ubuntu_instance_count + var.amazon_linux_instance_count > 0
 }
 
+data "http" "operator_public_ip" {
+  count = local.demo_instances_enabled && var.auto_detect_demo_ssh_cidr ? 1 : 0
+  url   = var.demo_ssh_cidr_lookup_url
+}
+
+locals {
+  auto_detected_demo_ssh_cidrs = local.demo_instances_enabled && var.auto_detect_demo_ssh_cidr ? ["${chomp(data.http.operator_public_ip[0].response_body)}/32"] : []
+  effective_demo_ssh_cidrs     = distinct(compact(concat(var.demo_ssh_cidrs, local.auto_detected_demo_ssh_cidrs)))
+}
+
 data "aws_ami" "ubuntu" {
   count       = var.ubuntu_instance_count > 0 && var.ubuntu_ami_id == "" ? 1 : 0
   most_recent = true
@@ -51,7 +61,7 @@ resource "aws_security_group" "demo_ec2" {
   vpc_id      = module.vpc.vpc_id
 
   dynamic "ingress" {
-    for_each = var.demo_ssh_cidrs
+    for_each = local.effective_demo_ssh_cidrs
     content {
       description = "SSH"
       from_port   = 22

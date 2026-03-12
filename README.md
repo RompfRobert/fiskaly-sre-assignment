@@ -1,109 +1,95 @@
 # Fiskaly SRE Assignment
 
-Take home assignment for Site Reliability Engineer role at fiskaly.
+Take-home assignment for the Site Reliability Engineer role at fiskaly.
 
-It is absolutely possible to run these tasks separately but I recommend following this README as it will allow you to create a docker image, set up EKS and run out image in the Kubernetes cluster in AWS.
+This README is intentionally split into two parts:
 
-## Task 1: Docker Hello World Web App
+- Reviewer Quickstart: a 5-10 minute guided demo path.
+- Deep Dive and Rationale: architecture decisions, assumptions, and trade-offs.
 
-This repository includes a minimal Python HTTP app that responds with `Hello World` on port `8080`.
+The goal is to let a reviewer validate outcomes quickly first, then inspect detailed reasoning and design decisions without hunting through procedural steps.
 
-### Build the image
+## Reviewer Quickstart (5-10 minutes)
+
+This section is execution-first. If you only have a few minutes, run these steps in order.
+
+### 1) Prerequisites
+
+- Docker
+- Terraform
+- AWS CLI v2
+- kubectl
+- Helm (only if testing Argo CD bonus)
+- jq (for inventory generation script)
+- AWS credentials configured
+
+Optional quick environment check:
 
 ```bash
-docker build -t hello-world-web .
+docker --version
+terraform --version
+aws --version
+kubectl version --client
 ```
 
-### Run the container
+### 2) Task 1 - Docker Hello World
+
+Build image:
+
+```bash
+docker build -t hello-world-web docker
+```
+
+Run container:
 
 ```bash
 docker run --rm --name hello-world-web -p 8080:8080 hello-world-web
 ```
 
-### Verify locally
+Verify:
 
 ```bash
 curl http://localhost:8080
 ```
 
-Expected response:
+Expected:
 
 ```text
 Hello World
 ```
 
-### Access from other devices on the same network
+### 3) Task 3 - Terraform (AWS VPC + EKS)
 
-By default, `-p 8080:8080` publishes the container port on all host interfaces. To access it from another device on the same network, use:
-
-```text
-http://<your-host-ip>:8080
-```
-
-Example:
-
-```text
-http://192.168.1.42:8080
-```
-
-## Task 3: Terraform Infrastructure Deployment (EKS)
-
-We put task 3 before task 2 because we are going to use the EKS cluster to run our manifests in.
-
-This Terraform stack provisions:
-
-- A custom VPC with public/private subnets across 2-3 AZs
-- An EKS cluster with one managed node group
-- OIDC provider for IRSA
-
-Task 3-oriented defaults in this stack:
-
-- EKS managed node group is fixed to 4 nodes by default (`min=4`, `desired=4`, `max=4`).
-- EKS API endpoint defaults to private access (`public_access=false`, `private_access=true`).
-- Public endpoint CIDRs default to an empty list, so public control-plane exposure is opt-in.
-
-It uses official modules only:
-
-- `terraform-aws-modules/vpc/aws`
-- `terraform-aws-modules/eks/aws`
-
-For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linux to avoid additional RHEL licensing costs. In production, if RHEL is required, the corresponding Red Hat subscription/licensing and AWS Marketplace terms must be in place.
-
-### Task 2 Prerequisites
-
-- Terraform
-- AWS CLI v2
-- `kubectl`
-- AWS credentials configured (for example via `aws configure` or SSO profile)
-- Existing S3 bucket for Terraform backend state: `fiskaly-sre-assignment-terraform-backend`
-
-### Configure
+This project provisions infrastructure before Kubernetes app deployment so Task 3 comes before Task 2 in the demo flow.
 
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` if needed.
+Update `terraform.tfvars` as needed (region, key name, optional demo EC2 counts).
 
-If you need temporary public API access for admin operations, explicitly set a tight allowlist CIDR (never `0.0.0.0/0`), for example:
+Recommended demo values:
 
 ```hcl
 cluster_endpoint_public_access       = true
 cluster_endpoint_private_access      = true
-cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
+cluster_endpoint_public_access_cidrs = ["<your-public-ip>/32"]
+
+ubuntu_instance_count       = 1
+amazon_linux_instance_count = 1
+demo_key_name               = "<your-ec2-keypair-name>"
+demo_ssh_cidrs              = ["<your-public-ip>/32"]
 ```
 
-### Task 2 Deploy
+Deploy:
 
 ```bash
 terraform init
 terraform apply
 ```
 
-### Connect to EKS
-
-Use Terraform outputs to avoid guessing names:
+Configure kubeconfig from outputs:
 
 ```bash
 aws eks update-kubeconfig \
@@ -111,190 +97,297 @@ aws eks update-kubeconfig \
   --name "$(terraform output -raw cluster_name)"
 ```
 
-Verify nodes:
+Verify:
 
 ```bash
 kubectl get nodes
 ```
 
-### Destroy
+### 4) SSH setup for demo EC2 (Ansible prerequisite)
+
+If you are running the Ansible demo on Terraform-created EC2 instances, ensure your key pair exists and the private key file is present locally.
+
+Create key pair (example):
 
 ```bash
-terraform destroy
+aws ec2 create-key-pair \
+  --region eu-central-1 \
+  --key-name sre-assignment-demo \
+  --query 'KeyMaterial' \
+  --output text > ~/.ssh/sre-assignment-demo.pem
+
+chmod 600 ~/.ssh/sre-assignment-demo.pem
 ```
 
-## Task 2: Kubernetes Deployment
+If you already have a key pair, only make sure `demo_key_name` in `terraform/terraform.tfvars` matches your existing AWS key pair name and private key file path.
 
-The app from Task 1 is deployed with Kubernetes manifests in `k8s/`.
+### 5) Task 2 - Kubernetes Deployment
 
-### What is included
-
-- `k8s/deployment.yaml`: 2 replicas, probes, resources, and basic security settings.
-- `k8s/hpa.yaml`: autoscaling from 2 to 4 replicas based on CPU load.
-- `k8s/service.yaml`: ClusterIP service mapping `80 -> 8080`.
-- `k8s/ingress.yaml`: ingress resource using `ingressClassName: nginx` for NGINX load balancing/routing.
-- `k8s/namespace.yaml`: dedicated namespace (`hello-world`).
-
-### Prerequisites
-
-- A Kubernetes cluster (for example, kind, minikube, or EKS).
-- NGINX Ingress Controller installed in the cluster.
-- Metrics Server installed in the cluster (required by HPA).
-- For local clusters (for example, kind): the `hello-world-web:latest` image available to cluster nodes.
-- For EKS: push the image to ECR (or another reachable registry) and update `k8s/deployment.yaml` `image:` accordingly.
-
-Example for kind image loading:
-
-```bash
-kind load docker-image hello-world-web:latest
-```
-
-### Deploy
+From repo root:
 
 ```bash
 kubectl apply -f k8s/
 ```
 
-### Validate
+Verify rollout and resources:
 
 ```bash
 kubectl get deploy,pods,svc,hpa,ingress -n hello-world
 ```
 
-Expected:
-
-- Deployment starts with at least 2 replicas.
-- HPA is configured with min 2 and max 4 replicas.
-- Ingress is created with class `nginx`.
-
-### Quick local check via service
+Quick functional test:
 
 ```bash
 kubectl port-forward -n hello-world svc/hello-world 8080:80
 curl http://localhost:8080
 ```
 
-Expected response:
+Expected:
 
 ```text
 Hello World
 ```
 
-### Security and resource settings included
-
-- `runAsNonRoot: true`, non-root UID.
-- `allowPrivilegeEscalation: false`.
-- `capabilities.drop: ["ALL"]`.
-- `readOnlyRootFilesystem: true`.
-- CPU/memory requests and limits.
-- Readiness and liveness probes.
-
-### Optional: alternatives to NGINX load balancing
-
-- `Traefik`: good for simple dynamic routing and lightweight setups.
-- `HAProxy Ingress`: good when fine-grained traffic tuning or very high throughput is needed.
-- Cloud-native ingress controllers (for example AWS ALB Controller): good when you want managed cloud L7 integration, IAM-native workflows, and native cloud load balancer features.
-
-## Task 4: Ansible Playbook (Ubuntu + RedHat)
-
-Playbook path:
-
-- `ansible/playbook.yml`
-
-What it does:
-
-- Gathers system facts for all hosts.
-- Updates package repositories.
-- Upgrades packages.
-- On Ubuntu/Debian:
-  - Installs Apache (`apache2`).
-  - Serves a static `Hello World` page at `/var/www/html/index.html`.
-  - Restarts Apache when the page changes (via handler).
-- On RedHat:
-  - Installs MariaDB (`mariadb-server`).
-
-### Run
-
-Create an inventory file (example):
-
-```ini
-[ubuntu]
-ubuntu-1 ansible_host=192.168.1.10 ansible_user=ubuntu
-
-[redhat]
-rhel-1 ansible_host=192.168.1.20 ansible_user=ec2-user
-
-[all:vars]
-ansible_ssh_private_key_file=~/.ssh/id_rsa
-```
-
-Execute the playbook:
+Optional cleanup before GitOps step:
 
 ```bash
-ansible-playbook -i inventory.ini ansible/playbook.yml
+kubectl delete -f k8s/ --ignore-not-found
 ```
 
-## Bonus
+This avoids overlap between manually applied manifests and Argo CD-managed resources during the next step.
 
-I have implemented some bonus items.
+### 6) Task 4 - Ansible (Demo Fleet)
+
+Generate inventory from Terraform outputs:
+
+```bash
+scripts/generate_inventory.sh inventory.ini
+```
+
+Run demo playbook:
+
+```bash
+ansible-playbook -i inventory.ini ansible/playbook-demo.yml
+```
+
+### 7) Optional Bonus - Argo CD GitOps
+
+Before bootstrap, make sure old `hello-world` resources were cleaned up (previous step) so Argo CD becomes the single controller for the same objects.
+
+Install and bootstrap:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+kubectl create namespace argocd
+helm upgrade --install argocd argo/argo-cd \
+  --namespace argocd \
+  --version 7.7.16
+kubectl apply -f argocd/apps/root.yaml
+```
+
+Verify:
+
+```bash
+kubectl get applications -n argocd
+kubectl get deploy,svc,ingress,hpa -n hello-world
+kubectl get pods -n ingress-nginx
+```
+
+### 8) Cleanup
+
+Destroy infrastructure when done:
+
+```bash
+cd terraform
+terraform destroy
+```
+
+## Deep Dive and Rationale
+
+### Task 1 - Docker
+
+#### Approach
+
+- Implemented a minimal Python HTTP server using the standard library to keep the image small and dependency-free.
+- Container runs as explicit non-root UID/GID 10001 to align with pod security settings used in Kubernetes.
+
+#### Docker assumptions
+
+- Service is a demo endpoint with no TLS/auth requirements.
+- Port 8080 is reachable from the local host/network when published.
+
+#### Trade-offs
+
+- Python stdlib HTTP server is simple and transparent for the assignment, but not production-grade.
+- In production, a hardened app server stack (for example gunicorn/uvicorn or nginx) would be preferred.
+
+### Task 3 - Terraform (AWS)
+
+#### Provisioned resources
+
+- Custom VPC with public/private subnets across 2-3 AZs.
+- EKS cluster with one managed node group.
+- OIDC provider for IRSA.
+- Optional demo EC2 instances (Ubuntu + Amazon Linux) for Ansible testing.
+
+#### Terraform architecture diagram
+
+```mermaid
+flowchart TD
+  Internet((Internet))
+  VPC[VPC 10.0.0.0/16]
+  Pub[Public Subnets]
+  Priv[Private Subnets]
+  NAT[NAT Gateway]
+  EKS[EKS Control Plane]
+  Nodes[Managed Node Group]
+  OIDC[OIDC Provider / IRSA]
+  Demo[Demo EC2 Hosts\nUbuntu + Amazon Linux]
+
+  Internet --> Pub
+  VPC --> Pub
+  VPC --> Priv
+  Pub --> NAT
+  NAT --> Priv
+  EKS --> Priv
+  Priv --> Nodes
+  EKS --> OIDC
+  Pub --> Demo
+```
+
+#### Key decisions
+
+- EKS over self-managed Kubernetes: managed control plane reduces ops overhead.
+- Official modules (`terraform-aws-modules/vpc/aws`, `terraform-aws-modules/eks/aws`) for maintainability.
+- Private endpoint defaults for control plane to minimize exposure.
+- Fixed node count defaults aligned to assignment requirement.
+
+#### Terraform assumptions
+
+- Single-region deployment (default `eu-central-1`).
+- Operator has required AWS IAM permissions.
+- Fresh environment (no dependency on existing VPC/EKS).
+
+#### Terraform trade-offs and alternatives
+
+- Fixed node counts are predictable for the assignment; autoscaling is more realistic in production.
+- Ubuntu + Amazon Linux avoids additional RHEL licensing constraints for demo hosts.
+- GKE or self-managed Kubernetes are valid alternatives depending on platform strategy.
+
+### Task 2 - Kubernetes
+
+#### Included manifests
+
+- `k8s/namespace.yaml`
+- `k8s/deployment.yaml`
+- `k8s/service.yaml`
+- `k8s/ingress.yaml`
+- `k8s/hpa.yaml`
+- `k8s/networkpolicy.yaml`
+
+#### Security and reliability choices
+
+- Non-root execution, dropped Linux capabilities, read-only root filesystem.
+- Readiness/liveness probes for availability and self-healing.
+- Resource requests/limits to support scheduling and cluster stability.
+- HPA for scaling from baseline to higher load.
+- NGINX ingress for L7 routing and load balancing.
+
+#### Kubernetes assumptions
+
+- Ingress controller and metrics server are installed in the cluster.
+- Image is reachable by the cluster runtime.
+
+#### Trade-offs and alternatives
+
+- Static manifests are simple and transparent; Helm improves reuse/parameterization.
+- GitOps with Argo CD improves drift control and auditability but adds platform overhead.
+- Alternative ingress controllers include Traefik, HAProxy, and cloud-native options like ALB Controller.
+
+### Task 4 - Ansible (Ubuntu + Amazon Linux demo)
+
+#### Scope implemented
+
+- Gather facts.
+- Refresh package metadata and upgrade packages.
+- Ubuntu/Debian: install Apache, deploy Hello World page, restart only on changes.
+- Amazon Linux: ensure MariaDB package and service are present/running.
+
+#### Key design choices
+
+- Single play with fact-driven branching by OS family/distribution.
+- Idempotent built-in modules for package and service convergence.
+- Handler-based Apache restart to avoid unnecessary restarts.
+- Amazon Linux MariaDB package selection is distribution-version aware in demo playbook to handle AL2 and AL2023 package naming differences.
+
+#### Conflict handling policy
+
+- Demo resilient mode can be enabled in `ansible/playbook-demo.yml` to continue through package stream conflicts (`skip_broken=true`).
+- Strict mode (`skip_broken=false`) is preferred for production because dependency conflicts should fail fast and be remediated explicitly.
+
+#### Assumptions
+
+- SSH connectivity is working and inventory/key settings are correct.
+- Managed hosts have reachable package repositories.
+
+#### SSH and inventory notes
+
+- Inventory is generated from Terraform outputs via `scripts/generate_inventory.sh`.
+- Script expects `demo_key_name` to be set in `terraform/terraform.tfvars` and the matching private key at `~/.ssh/<demo_key_name>.pem`.
+- SSH ingress to demo instances is controlled by `demo_ssh_cidrs` (and optional auto-detected CIDR in Terraform settings), so stale IP allowlists can cause connectivity failures.
+
+### Operations Readiness (Bonus)
+
+#### Failure scenario
+
+- New deployment causes pod crash loops or rollout stalls.
+
+#### Detection signals
+
+- `kubectl rollout status deployment/hello-world -n hello-world`
+- `kubectl get pods -n hello-world -w`
+- `kubectl get events -n hello-world --sort-by=.lastTimestamp`
+- Argo CD app health/sync status
+
+#### Recovery path
+
+1. Check deployment history:
+   `kubectl rollout history deployment/hello-world -n hello-world`
+2. Roll back:
+   `kubectl rollout undo deployment/hello-world -n hello-world`
+3. If GitOps re-applies bad state, revert the bad commit and let Argo CD reconcile.
+
+#### Verification
+
+- Rollout succeeds.
+- Desired replicas are `Running` and `Ready`.
+- Argo CD shows app as `Synced` and `Healthy`.
+- Endpoint returns `Hello World`.
+
+## Bonus and Reference
+
+### GitOps (Argo CD)
+
+- Root app-of-apps entrypoint: `argocd/apps/root.yaml`
+- Child applications:
+  - `argocd/apps/children/project.yaml`
+  - `argocd/apps/children/hello-world.yaml`
+  - `argocd/apps/children/ingress-nginx.yaml`
+- Additional notes and bootstrap troubleshooting: `argocd/README.md`
 
 ### CI Quality Gates (GitHub Actions)
 
-Workflow file:
+Workflow:
 
 - `.github/workflows/quality-gates.yml`
 
-Triggers:
+Checks:
 
-- `pull_request`
-- `push` to `master` (`main`)
-- `schedule` daily at `03:00 UTC`
-- `workflow_dispatch`
+- Terraform formatting, init, validate, and TFLint.
+- Kubernetes schema checks (kubeconform) and linting (kube-linter).
 
-Blocking checks on PR/push:
-
-- `terraform-quality`
-  - `terraform fmt -check -recursive terraform/`
-  - `terraform -chdir=terraform init -backend=false -input=false`
-  - `terraform -chdir=terraform validate`
-  - `tflint --init`
-  - `tflint --chdir=terraform --recursive`
-- `k8s-quality`
-  - `kubeconform -strict -summary k8s/*.yaml`
-  - `kube-linter lint k8s --config .kube-linter.yaml`
-- `ansible-quality`
-  - `ansible-lint ansible/playbook.yml`
-- `security-quality`
-  - `docker build -t hello-world-web:ci .`
-  - `trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci`
-  - `trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/`
-
-Nightly deep scan:
-
-- Job: `nightly-trivy-fs` (runs on `schedule` and manual `workflow_dispatch`)
-- Command:
-  - `trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .`
-- Report:
-  - JSON artifact uploaded as `trivy-fs-report`.
-
-Baseline tuning:
-
-- `.kube-linter.yaml` enables all built-in checks and excludes only:
-  - `latest-tag`
-  - `default-service-account`
-- `.tflint.hcl` enables the AWS ruleset plugin and module-aware linting.
-- `.trivyignore` is intentionally not pre-populated; add only for confirmed false positives.
-
-Recommended branch protection required checks:
-
-- `terraform-quality`
-- `k8s-quality`
-- `ansible-quality`
-- `security-quality`
-
-### Run checks locally
-
-You can run equivalent checks locally with:
+Local equivalents:
 
 ```bash
 terraform fmt -check -recursive terraform/
@@ -304,9 +397,4 @@ tflint --init --config=.tflint.hcl
 tflint --chdir=terraform --recursive --config=../.tflint.hcl
 kubeconform -strict -summary k8s/*.yaml
 kube-linter lint k8s --config .kube-linter.yaml
-ansible-lint ansible/playbook.yml
-docker build -t hello-world-web:ci .
-trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 hello-world-web:ci
-trivy config --severity HIGH,CRITICAL --exit-code 1 terraform/
-trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --exit-code 1 .
 ```

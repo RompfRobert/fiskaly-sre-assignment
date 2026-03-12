@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Restrict Argo CD to the assignment repo and target namespaces.
+  sourceRepos:
+  - https://github.com/RompfRobert/fiskaly-sre-assignment.git
+  - https://kubernetes.github.io/ingress-nginx/
+  destinations:
+  - namespace: hello-world
+    server: https://kubernetes.default.svc
+  - namespace: ingress-nginx
+    server: https://kubernetes.default.svc
+  - namespace: argocd
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'

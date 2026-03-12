@@ -51,6 +51,7 @@ amazon_linux_instance_count = 1
 demo_instance_type    = "t3.micro"
 demo_key_name         = "my-keypair"
 demo_ssh_cidrs        = ["203.0.113.10/32"]
+auto_detect_demo_ssh_cidr = true
 ```
 
 Notes:
@@ -58,6 +59,15 @@ Notes:
 - For this demo stack we use Amazon Linux instead of RHEL to avoid extra licensing costs.
 - In production, if you require RHEL, ensure you have the appropriate Red Hat subscription/licensing and Marketplace terms accepted in your AWS account.
 - If auto-discovery does not work in your account/region, set `ubuntu_ami_id` and `amazon_linux_ami_id` explicitly.
+- `auto_detect_demo_ssh_cidr = true` adds your current public IP as `/32` automatically. This helps avoid SSH timeouts when your ISP/VPN IP changes.
+
+If Ansible shows SSH timeouts, refresh security-group rules and regenerate inventory:
+
+```bash
+terraform apply
+./scripts/generate_inventory.sh inventory.ini
+ansible-playbook -i inventory.ini ansible/playbook-demo.yml
+```
 
 ## Deploy
 
