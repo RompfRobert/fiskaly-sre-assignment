@@ -2,6 +2,43 @@
 
 Take home assignment for Site Reliability Engineer role at fiskaly.
 
+**Branch Overview:**
+
+1. **`master`** — Full showcase branch with all required task solutions plus bonus material (for example Argo CD GitOps, GitHub Actions quality gates, and additional documentation depth).
+2. **`min` (current)** — Minimal branch focused strictly on the assignment requirements from [assignement.md](assignement.md), without extra enhancements.
+
+This split demonstrates both delivery styles: exact scope execution when requested and extended implementation when additional value is useful.
+
+### Prerequisites
+
+This guide is designed for **macOS** and **Linux**. Windows users should use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
+
+**AWS Credentials:**  
+Configure your AWS credentials before proceeding. See the [AWS CLI Configuration Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
+
+**Required Tools:**
+
+All of the following tools must be installed:
+
+| Tool          | Installation                                                                                                                                    |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Terraform** | [Download](https://www.terraform.io/downloads) • [Homebrew](https://formulae.brew.sh/formula/terraform)                                         |
+| **kubectl**   | [Download](https://kubernetes.io/docs/tasks/tools/) • [Homebrew](https://formulae.brew.sh/formula/kubernetes-cli)                               |
+| **Helm**      | [Download](https://helm.sh/docs/intro/install/) • [Homebrew](https://formulae.brew.sh/formula/helm)                                             |
+| **AWS CLI**   | [Download](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) • [Homebrew](https://formulae.brew.sh/formula/awscli) |
+| **Docker**    | [Download](https://docs.docker.com/get-started/get-docker/) • [Homebrew](https://formulae.brew.sh/cask/docker)                                  |
+
+Verify your installations:
+
+```bash
+docker --version
+terraform --version
+aws --version
+kubectl version --client
+helm version
+jq --version
+```
+
 ## Task 1: Docker Hello World Web App
 
 This repository includes a minimal Python HTTP app that responds with `Hello World` on port `8080`.
@@ -54,7 +91,7 @@ http://192.168.1.42:8080
 
 ## Task 3: Terraform Infrastructure Deployment (EKS)
 
-We put task 3 before task 2 because we are going to use the EKS cluster to run our manifests in. You don't have to do this in this order if you don't want to, I just thought to combine the 2 steps since they are complimentary.
+We put task 3 before task 2 because we are going to use the EKS cluster to run our manifests in. You don't have to do this in this order if you don't want to, I just thought to combine the 2 steps since they are complementary.
 
 This Terraform stack provisions:
 
@@ -73,10 +110,6 @@ It uses official modules for core infrastructure:
 - `terraform-aws-modules/vpc/aws`
 - `terraform-aws-modules/eks/aws`
 
-Optional demo EC2 resources for Ansible testing are defined with native AWS Terraform resources.
-
-For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linux to avoid additional RHEL licensing costs. In production, if RHEL is required, the corresponding Red Hat subscription/licensing and AWS Marketplace terms must be in place.
-
 ### Approach and reasoning
 
 - **EKS over self-managed**: EKS provides a managed control plane and OIDC integration (IRSA) out of the box.
@@ -89,6 +122,7 @@ For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linu
 
 - EKS API endpoint defaults to private-only access (`public_access=false`, `private_access=true`).
 - If public API access is enabled for admin operations, access is constrained via `cluster_endpoint_public_access_cidrs`.
+- Terraform in this task covers infrastructure-level controls (VPC/subnets/EKS endpoint exposure), while workload-level controls are implemented in the Task 2 Kubernetes manifests.
 - Kubernetes workload traffic restrictions are handled in Task 2 manifests (for example namespace isolation and ingress/HPA/service boundaries).
 
 ### Assumptions
@@ -101,12 +135,11 @@ For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linu
 ### Trade-offs and alternatives
 
 - **Fixed node count**: Simple, predictable; production should use auto-scaling.
-- **Ubuntu + Amazon Linux for demo**: Avoids RHEL licensing. Production would use RHEL per compliance requirements.
 - **Alternatives**: GKE (Google Cloud) simpler OAuth integration; self-managed Kubernetes for maximum control at operational cost.
 
-### Task 2 Prerequisites
+### Task 3 Prerequisites
 
-- Terraform
+- Terraform (version `>= 1.10` for native S3 lockfile support)
 - AWS CLI v2
 - `kubectl`
 - AWS credentials configured (for example via `aws configure` or SSO profile)
@@ -129,7 +162,7 @@ cluster_endpoint_private_access      = true
 cluster_endpoint_public_access_cidrs = ["203.0.113.10/32"]
 ```
 
-### Task 2 Deploy
+### Task 3 Deploy
 
 ```bash
 terraform init
