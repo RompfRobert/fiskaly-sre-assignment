@@ -245,7 +245,7 @@ terraform destroy
 #### Provisioned resources
 
 - Custom VPC with public/private subnets across 2-3 AZs.
-- EKS cluster with one managed node group.
+- EKS cluster with one managed node group, with desired/min/max = 4 nodes by default.
 - OIDC provider for IRSA.
 - Optional demo EC2 instances (Ubuntu + Amazon Linux) for Ansible testing.
 
@@ -265,6 +265,7 @@ terraform destroy
 - Single-region deployment (default `eu-central-1`).
 - Operator has required AWS IAM permissions.
 - Fresh environment (no dependency on existing VPC/EKS).
+- Broad outbound egress is limited to optional demo EC2 hosts used for Ansible testing; the core EKS cluster path uses tighter node egress rules.
 
 #### Terraform trade-offs and alternatives
 
@@ -303,6 +304,8 @@ terraform destroy
 - Alternative ingress controllers include Traefik, HAProxy, and cloud-native options like ALB Controller.
 
 ### Task 4 - Ansible (Ubuntu + Amazon Linux demo)
+
+Assignment-compliant implementation is in `ansible/playbook.yml` (Ubuntu + RedHat). The practical AWS demo variant is `ansible/playbook-demo.yml` (Ubuntu + Amazon Linux), chosen to keep the live demo straightforward while avoiding RHEL licensing constraints in ephemeral test environments.
 
 #### Scope implemented
 
