@@ -50,6 +50,8 @@ helm version
 jq --version
 ```
 
+Note: Terraform `>= 1.10` is required because this project uses native S3 lockfile state locking (`use_lockfile = true`).
+
 ### 2) Task 1 - Docker Hello World
 
 Build image:
@@ -247,7 +249,7 @@ terraform destroy
 - Custom VPC with public/private subnets across 2-3 AZs.
 - EKS cluster with one managed node group, with desired/min/max = 4 nodes by default.
 - OIDC provider for IRSA.
-- Optional demo EC2 instances (Ubuntu + Amazon Linux) for Ansible testing.
+- Optional demo EC2 instances (Ubuntu 24.04 + Amazon Linux 2023) for Ansible testing.
 
 #### Terraform architecture diagram
 
@@ -270,7 +272,7 @@ terraform destroy
 #### Terraform trade-offs and alternatives
 
 - Fixed node counts are predictable for the assignment; autoscaling is more realistic in production.
-- Ubuntu + Amazon Linux avoids additional RHEL licensing constraints for demo hosts.
+- Ubuntu 24.04 + Amazon Linux 2023 avoids additional RHEL licensing constraints for demo hosts.
 - GKE or self-managed Kubernetes are valid alternatives depending on platform strategy.
 
 ### Task 2 - Kubernetes
