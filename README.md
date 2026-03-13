@@ -81,9 +81,15 @@ For demo EC2 hosts used by Ansible testing, this stack uses Ubuntu + Amazon Linu
 
 - **EKS over self-managed**: EKS provides a managed control plane and OIDC integration (IRSA) out of the box.
 - **Official modules**: terraform-aws-modules maintain best practices and reduce boilerplate.
-- **Private endpoint by default**: Restricts unauthenticated exposure but does not require bastion/VPN for authenticated admin access.
+- **Private endpoint by default**: Reduces control-plane exposure by default; public API access is opt-in and should be tightly CIDR-restricted.
 - **Fixed 4 nodes**: Matches assignment requirement; production would use auto-scaling groups.
 - **Multi-AZ subnets**: High availability across zones; handles AZ failures.
+
+### Task 3 network security configuration
+
+- EKS API endpoint defaults to private-only access (`public_access=false`, `private_access=true`).
+- If public API access is enabled for admin operations, access is constrained via `cluster_endpoint_public_access_cidrs`.
+- Kubernetes workload traffic restrictions are handled in Task 2 manifests (for example namespace isolation and ingress/HPA/service boundaries).
 
 ### Assumptions
 
