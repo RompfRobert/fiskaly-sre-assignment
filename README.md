@@ -15,21 +15,32 @@ This section is execution-first. If you only have a few minutes, run these steps
 
 ### 1) Prerequisites
 
-- Docker
-- Terraform
-- AWS CLI v2
-- kubectl
-- Helm (only if testing Argo CD bonus)
-- jq (for inventory generation script)
-- AWS credentials configured
+This guide is designed for **macOS** and **Linux**. Windows users should use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
-Optional quick environment check:
+**AWS Credentials:**  
+Configure your AWS credentials before proceeding. See the [AWS CLI Configuration Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
+
+**Required Tools:**
+
+All of the following tools must be installed:
+
+| Tool          | Installation                                                                                                                                    |
+|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Terraform** | [Download](https://www.terraform.io/downloads) • [Homebrew](https://formulae.brew.sh/formula/terraform)                                         |
+| **kubectl**   | [Download](https://kubernetes.io/docs/tasks/tools/) • [Homebrew](https://formulae.brew.sh/formula/kubernetes-cli)                               |
+| **Helm**      | [Download](https://helm.sh/docs/intro/install/) • [Homebrew](https://formulae.brew.sh/formula/helm)                                             |
+| **AWS CLI**   | [Download](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) • [Homebrew](https://formulae.brew.sh/formula/awscli) |
+| **Docker**    | [Download](https://docs.docker.com/get-started/get-docker/) • [Homebrew](https://formulae.brew.sh/cask/docker)                                  |
+
+Verify your installations:
 
 ```bash
 docker --version
 terraform --version
 aws --version
 kubectl version --client
+helm version
+jq --version
 ```
 
 ### 2) Task 1 - Docker Hello World
@@ -233,28 +244,7 @@ terraform destroy
 
 #### Terraform architecture diagram
 
-```mermaid
-flowchart TD
-  Internet((Internet))
-  VPC[VPC 10.0.0.0/16]
-  Pub[Public Subnets]
-  Priv[Private Subnets]
-  NAT[NAT Gateway]
-  EKS[EKS Control Plane]
-  Nodes[Managed Node Group]
-  OIDC[OIDC Provider / IRSA]
-  Demo[Demo EC2 Hosts\nUbuntu + Amazon Linux]
-
-  Internet --> Pub
-  VPC --> Pub
-  VPC --> Priv
-  Pub --> NAT
-  NAT --> Priv
-  EKS --> Priv
-  Priv --> Nodes
-  EKS --> OIDC
-  Pub --> Demo
-```
+![alt text](img/diagram.png)
 
 #### Key decisions
 
