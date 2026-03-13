@@ -137,14 +137,6 @@ It uses official modules for core infrastructure:
 - **Fixed node count**: Simple, predictable; production should use auto-scaling.
 - **Alternatives**: GKE (Google Cloud) simpler OAuth integration; self-managed Kubernetes for maximum control at operational cost.
 
-### Task 3 Prerequisites
-
-- Terraform (version `>= 1.10` for native S3 lockfile support)
-- AWS CLI v2
-- `kubectl`
-- AWS credentials configured (for example via `aws configure` or SSO profile)
-- Existing S3 bucket for Terraform backend state: `fiskaly-sre-assignment-terraform-backend`
-
 ### Configure
 
 ```bash
