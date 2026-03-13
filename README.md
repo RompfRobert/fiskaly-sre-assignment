@@ -219,7 +219,7 @@ The app from Task 1 is deployed with Kubernetes manifests in `k8s/`.
 - **HPA vs manual scaling**: HPA is reactive and automatic; production often layers on predictive scaling or event-driven scaling for predictable load patterns.
 - **ClusterIP service vs LoadBalancer**: ClusterIP + Ingress is standard and cost-effective; LoadBalancer directly exposes the service but requires more managed load balancers.
 
-### Prerequisites
+### Task 2 Prerequisites
 
 - A Kubernetes cluster (for example, kind, minikube, or EKS).
 - NGINX Ingress Controller installed in the cluster.
