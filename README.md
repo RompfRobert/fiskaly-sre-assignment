@@ -9,6 +9,13 @@ This README is intentionally split into two parts:
 
 The goal is to let a reviewer validate outcomes quickly first, then inspect detailed reasoning and design decisions without hunting through procedural steps.
 
+**Branch Overview:**
+
+1. **`master` (default)** — Full showcase branch with all required task solutions plus bonus material (for example Argo CD GitOps, GitHub Actions quality gates, and additional documentation depth).
+2. **`min`** — Minimal branch focused strictly on the assignment requirements from [assignement.md](assignement.md), without extra enhancements.
+
+This split demonstrates both delivery styles: exact scope execution when requested and extended implementation when additional value is useful.
+
 ## Reviewer Quickstart (5-10 minutes)
 
 This section is execution-first. If you only have a few minutes, run these steps in order.
